@@ -24,7 +24,7 @@ pub use debug_format::{
 };
 pub use shell_builder::{ShellBuilder, ShellKind};
 pub use task_template::{
-    DebugArgsRequest, HideStrategy, RevealStrategy, TaskTemplate, TaskTemplates,
+    DebugArgsRequest, HideStrategy, RevealStrategy, TaskNotificationConfig, TaskTemplate, TaskTemplates,
     substitute_variables_in_map, substitute_variables_in_str,
 };
 pub use vscode_debug_format::VsCodeDebugTaskFile;
@@ -74,6 +74,8 @@ pub struct SpawnInTerminal {
     pub show_command: bool,
     /// Whether to show the rerun button in the terminal tab.
     pub show_rerun: bool,
+    /// Configuration for showing notifications when the task completes.
+    pub notification: Option<TaskNotificationConfig>,
 }
 
 impl SpawnInTerminal {

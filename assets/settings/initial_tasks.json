@@ -43,8 +43,27 @@
     //           "args": ["--login"]
     //         }
     //     }
-    "shell": "system"
+    "shell": "system",
     // Represents the tags for inline runnable indicators, or spawning multiple tasks at once.
     // "tags": []
+    // Configuration for showing notifications when the task completes.
+    "notification": {
+      // Optional body text for the notification. If not provided, only the status will be shown.
+      "body": "The example task has completed with a custom message!"
+    }
+  },
+  {
+    "label": "Build with notification", 
+    "command": "echo",
+    "args": ["Building project..."],
+    "notification": {
+      "body": "Build finished!"
+    }
+  },
+  {
+    "label": "Test with notification",
+    "command": "echo", 
+    "args": ["Running tests..."],
+    "notification": {}
   }
 ]
