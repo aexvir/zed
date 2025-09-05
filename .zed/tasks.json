@@ -4,13 +4,19 @@
     "command": "./script/clippy",
     "args": [],
     "allow_concurrent_runs": true,
-    "use_new_terminal": false
+    "use_new_terminal": false,
+    "notification": {
+      "body": "Clippy check completed"
+    }
   },
   {
     "label": "cargo run --profile release-fast",
     "command": "cargo",
     "args": ["run", "--profile", "release-fast"],
     "allow_concurrent_runs": true,
-    "use_new_terminal": false
+    "use_new_terminal": false,
+    "notification": {
+      "body": "Zed build and run finished"
+    }
   }
 ]

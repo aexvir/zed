@@ -72,6 +72,9 @@ pub struct TaskTemplate {
     /// Whether to show the command line in the task output.
     #[serde(default = "default_true")]
     pub show_command: bool,
+    /// Configuration for showing notifications when the task completes.
+    #[serde(default)]
+    pub notification: Option<TaskNotificationConfig>,
 }
 
 #[derive(Deserialize, Eq, PartialEq, Clone, Debug)]
@@ -107,6 +110,14 @@ pub enum HideStrategy {
     Always,
     /// Hide the terminal tab on task success only, otherwise behaves similar to `Always`.
     OnSuccess,
+}
+
+/// Configuration for showing notifications when a task completes.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct TaskNotificationConfig {
+    /// Optional body text for the notification. If not provided, only the status will be shown.
+    pub body: Option<String>,
 }
 
 /// A group of Tasks defined in a JSON file.
@@ -271,6 +282,7 @@ impl TaskTemplate {
                 show_summary: self.show_summary,
                 show_command: self.show_command,
                 show_rerun: true,
+                notification: self.notification.clone(),
             },
         })
     }
@@ -968,6 +980,65 @@ mod tests {
                 .resolve_task(TEST_ID_BASE, &TaskContext::default())
                 .is_none(),
             "Should fail when ZED variable has no default and doesn't exist"
+        );
+    }
+
+    #[test]
+    fn test_task_notification_config_serialization() {
+        let task_with_notification = TaskTemplate {
+            label: "test task".to_string(),
+            command: "echo".to_string(),
+            args: vec!["hello".to_string()],
+            notification: Some(TaskNotificationConfig {
+                body: Some("Task finished successfully!".to_string()),
+            }),
+            ..TaskTemplate::default()
+        };
+
+        let json = serde_json_lenient::to_string(&task_with_notification).unwrap();
+        let deserialized: TaskTemplate = serde_json_lenient::from_str(&json).unwrap();
+
+        assert_eq!(task_with_notification, deserialized);
+        assert!(deserialized.notification.is_some());
+        assert_eq!(
+            deserialized.notification.as_ref().unwrap().body,
+            Some("Task finished successfully!".to_string())
+        );
+    }
+
+    #[test]
+    fn test_task_notification_config_optional() {
+        let task_without_notification = TaskTemplate {
+            label: "test task".to_string(),
+            command: "echo".to_string(),
+            ..TaskTemplate::default()
+        };
+
+        let json = serde_json_lenient::to_string(&task_without_notification).unwrap();
+        let deserialized: TaskTemplate = serde_json_lenient::from_str(&json).unwrap();
+
+        assert_eq!(task_without_notification, deserialized);
+        assert!(deserialized.notification.is_none());
+    }
+
+    #[test]
+    fn test_task_resolution_with_notification() {
+        let task_template = TaskTemplate {
+            label: "build project".to_string(),
+            command: "cargo".to_string(),
+            args: vec!["build".to_string()],
+            notification: Some(TaskNotificationConfig {
+                body: Some("Build completed".to_string()),
+            }),
+            ..TaskTemplate::default()
+        };
+
+        let resolved = task_template.resolve_task(TEST_ID_BASE, &TaskContext::default()).unwrap();
+        
+        assert!(resolved.resolved.notification.is_some());
+        assert_eq!(
+            resolved.resolved.notification.as_ref().unwrap().body,
+            Some("Build completed".to_string())
         );
     }
 }

@@ -105,6 +105,7 @@ impl Project {
             show_summary: spawn_task.show_summary,
             show_command: spawn_task.show_command,
             show_rerun: spawn_task.show_rerun,
+            notification: spawn_task.notification,
             completion_rx,
         });
         let remote_client = self.remote_client.clone();

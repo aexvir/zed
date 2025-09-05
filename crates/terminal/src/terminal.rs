@@ -43,7 +43,7 @@ use pty_info::PtyProcessInfo;
 use serde::{Deserialize, Serialize};
 use settings::Settings;
 use smol::channel::{Receiver, Sender};
-use task::{HideStrategy, Shell, TaskId};
+use task::{HideStrategy, Shell, TaskId, TaskNotificationConfig};
 use terminal_hyperlinks::RegexSearches;
 use terminal_settings::{AlternateScroll, CursorShape, TerminalSettings};
 use theme::{ActiveTheme, Theme};
@@ -130,6 +130,12 @@ pub enum Event {
     SelectionsChanged,
     NewNavigationTarget(Option<MaybeNavigationTarget>),
     Open(MaybeNavigationTarget),
+    TaskCompleted {
+        task_id: TaskId,
+        label: String,
+        success: bool,
+        notification_config: Option<TaskNotificationConfig>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -745,6 +751,7 @@ pub struct TaskState {
     pub show_summary: bool,
     pub show_command: bool,
     pub show_rerun: bool,
+    pub notification: Option<TaskNotificationConfig>,
 }
 
 /// A status of the current terminal tab's task.
@@ -1954,6 +1961,16 @@ impl Terminal {
             // when Zed task finishes and no more output is made.
             // After the task summary is output once, no more text is appended to the terminal.
             unsafe { append_text_to_term(&mut self.term.lock(), &lines_to_show) };
+        }
+
+        // Emit task completion event for notification handling
+        if task.notification.is_some() {
+            cx.emit(Event::TaskCompleted {
+                task_id: task.id.clone(),
+                label: task.label.clone(),
+                success: finished_successfully,
+                notification_config: task.notification.clone(),
+            });
         }
 
         match task.hide {

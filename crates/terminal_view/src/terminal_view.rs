@@ -17,7 +17,7 @@ use gpui::{
 use persistence::TERMINAL_DB;
 use project::{Project, search::SearchQuery};
 use schemars::JsonSchema;
-use task::TaskId;
+use task::{TaskId, TaskNotificationConfig};
 use terminal::{
     Clear, Copy, Event, HoveredWord, MaybeNavigationTarget, Paste, ScrollLineDown, ScrollLineUp,
     ScrollPageDown, ScrollPageUp, ScrollToBottom, ScrollToTop, ShowCharacterPalette, TaskState,
@@ -44,6 +44,7 @@ use workspace::{
     item::{
         BreadcrumbText, Item, ItemEvent, SerializableItem, TabContentParams, TabTooltipContent,
     },
+    notifications,
     register_serializable_item,
     searchable::{Direction, SearchEvent, SearchOptions, SearchableItem, SearchableItemHandle},
 };
@@ -1096,10 +1097,70 @@ fn subscribe_for_terminal_events(
                     window.invalidate_character_coordinates();
                     cx.emit(SearchEvent::ActiveMatchChanged)
                 }
+                Event::TaskCompleted {
+                    task_id: _,
+                    label,
+                    success,
+                    notification_config,
+                } => {
+                    if let Some(config) = notification_config {
+                        show_task_notification(
+                            &workspace,
+                            label,
+                            *success,
+                            config,
+                            window,
+                            cx,
+                        );
+                    }
+                }
             }
         },
     );
     vec![terminal_subscription, terminal_events_subscription]
+}
+
+fn show_task_notification(
+    workspace: &WeakEntity<Workspace>,
+    label: &str,
+    success: bool,
+    config: &TaskNotificationConfig,
+    window: &mut Window,
+    cx: &mut Context<TerminalView>,
+) {
+    if let Some(workspace) = workspace.upgrade() {
+        workspace.update(cx, |workspace, cx| {
+            let title = label.to_string();
+            let (icon, icon_color) = if success {
+                (ui::IconName::Check, ui::Color::Success)
+            } else {
+                (ui::IconName::Close, ui::Color::Error)
+            };
+            
+            let body = config.body.as_deref().unwrap_or_else(|| {
+                if success {
+                    "Task completed successfully"
+                } else {
+                    "Task failed"
+                }
+            });
+            
+            let notification_id = workspace::notifications::NotificationId::named(
+                format!("task-{}", title).into()
+            );
+            
+            workspace.show_notification(notification_id, cx, |cx| {
+                cx.new(|cx| {
+                    workspace::notifications::simple_message_notification::MessageNotification::new(body, cx)
+                        .with_title(title)
+                        .primary_icon(icon)
+                        .primary_icon_color(icon_color)
+                        .show_close_button(true)
+                        .show_suppress_button(false)
+                })
+            });
+        }).ok();
+    }
 }
 
 fn regex_search_for_query(query: &project::search::SearchQuery) -> Option<RegexSearch> {
