@@ -45,9 +45,14 @@ Zed supports ways to spawn (and rerun) commands using its integrated terminal to
     // Whether to show the task line in the output of the spawned task, defaults to `true`.
     "show_summary": true,
     // Whether to show the command line in the output of the spawned task, defaults to `true`.
-    "show_output": true
+    "show_output": true,
     // Represents the tags for inline runnable indicators, or spawning multiple tasks at once.
-    // "tags": []
+    // "tags": [],
+    // Configuration for showing notifications when the task completes.
+    "notification": {
+      // Optional body text for the notification. If not provided, a default message is shown.
+      "body": "Task completed successfully!"
+    }
   }
 ]
 ```
@@ -130,6 +135,72 @@ Or explicitly include escaped quotes like so:
   "label": "stat current file",
   "command": "stat \"$ZED_FILE\""
 }
+```
+
+## Task Notifications
+
+Zed can display notifications when tasks complete, helping you stay aware of task status without constantly monitoring the terminal. Configure notifications by adding a `notification` object to your task definition.
+
+### Basic Notification
+
+To enable basic notifications with default messages:
+
+```json
+{
+  "label": "Build Project",
+  "command": "cargo",
+  "args": ["build"],
+  "notification": {}
+}
+```
+
+This will show a notification with:
+- **Title**: The task label ("Build Project")  
+- **Icon**: Green check ✅ for successful completion (exit code 0), red X ❌ for failures
+- **Message**: Default success/failure message
+
+### Custom Notification Message
+
+To provide a custom message:
+
+```json
+{
+  "label": "Deploy to Production", 
+  "command": "./deploy.sh",
+  "notification": {
+    "body": "Deployment completed! Check the logs for details."
+  }
+}
+```
+
+### Notification Behavior
+
+- Notifications appear in the top-right corner using Zed's notification system
+- Success notifications (exit code 0) show a green check icon
+- Failure notifications (non-zero exit code) show a red error icon  
+- Notifications can be dismissed manually or will auto-hide after a few seconds
+- The notification title always uses the task's `label` field
+- If no `body` is specified, default messages like "Task completed successfully" or "Task failed" are used
+
+### Examples
+
+```json
+[
+  {
+    "label": "Run Tests",
+    "command": "npm", 
+    "args": ["test"],
+    "notification": {
+      "body": "Test suite finished running"
+    }
+  },
+  {
+    "label": "Lint Code",
+    "command": "eslint",
+    "args": ["."],
+    "notification": {}
+  }
+]
 ```
 
 ## Oneshot tasks
